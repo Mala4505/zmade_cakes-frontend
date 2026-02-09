@@ -5,21 +5,23 @@ import {
   ChevronRight,
   MapPin,
   Truck,
-  ArrowRight } from
-'lucide-react';
+  ArrowRight
+} from
+  'lucide-react';
 import { Card } from '../ui/Card';
 import {
   StatusBadge,
   OrderStatus,
   getNextStatus,
-  getNextStatusLabel } from
-'../ui/StatusBadge';
+  getNextStatusLabel
+} from
+  '../ui/StatusBadge';
 import { Order } from '../../mockData';
 import { Button } from '../ui/Button';
 interface OrderCardProps {
   order: Order;
   onClick: () => void;
-  onStatusChange?: (status: OrderStatus) => void;
+  onStatusChange: (id: string, status: OrderStatus) => void;
 }
 export function OrderCard({ order, onClick, onStatusChange }: OrderCardProps) {
   const nextStatus = getNextStatus(order.status);
@@ -27,7 +29,7 @@ export function OrderCard({ order, onClick, onStatusChange }: OrderCardProps) {
   const handleQuickStatusChange = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (nextStatus && onStatusChange) {
-      onStatusChange(nextStatus);
+      onStatusChange(order.id, nextStatus);
     }
   };
   return (
@@ -38,13 +40,13 @@ export function OrderCard({ order, onClick, onStatusChange }: OrderCardProps) {
       <div className="flex justify-between items-start mb-3">
         <div>
           <span className="text-xs font-medium text-zm-greyOlive block mb-1">
-            {order.number}
+            {order.order_number}
           </span>
           <h3 className="font-semibold text-zm-stoneBrown text-lg">
-            {order.total.toFixed(3)} KWD
+            {order.items.map((item) => item.flavor).join(', ')}
           </h3>
           <span className="text-xs text-zm-greyOlive truncate block max-w-[180px]">
-            {order.items.map((item) => item.flavor).join(', ')}
+            {Number(order.total).toFixed(3)} KWD
           </span>
         </div>
         <div>
@@ -55,24 +57,24 @@ export function OrderCard({ order, onClick, onStatusChange }: OrderCardProps) {
       <div className="space-y-2 mb-4">
         <div className="flex items-center text-sm text-zm-stoneBrown/80">
           <User size={14} className="mr-2 text-zm-greyOlive" />
-          <span className="truncate">{order.customerName}</span>
+          <span className="truncate">{order.customer_name}</span>
         </div>
         <div className="flex items-center text-sm text-zm-stoneBrown/80">
           <Calendar size={14} className="mr-2 text-zm-greyOlive" />
           <span>
-            {order.deliveryDate} • {order.deliveryTime}
+            {order.delivery_date} • {order.delivery_time}
           </span>
         </div>
         <div className="flex items-center text-sm text-zm-stoneBrown/80">
-          {order.deliveryType === 'pickup' ?
-          <>
+          {order.pickup_or_delivery === 'pickup' ?
+            <>
               <MapPin size={14} className="mr-2 text-zm-greyOlive" />
               <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">
                 Pickup
               </span>
             </> :
 
-          <>
+            <>
               <Truck size={14} className="mr-2 text-zm-greyOlive" />
               <span className="text-xs bg-zm-mintCream px-2 py-0.5 rounded text-zm-deepTeal">
                 Delivery
@@ -93,25 +95,25 @@ export function OrderCard({ order, onClick, onStatusChange }: OrderCardProps) {
         </div>
 
         {nextStatus ?
-        <Button
-          size="sm"
-          variant="ghost"
-          className="w-full bg-zm-deepTeal/10 text-zm-deepTeal hover:bg-zm-deepTeal/20 justify-center h-9"
-          onClick={handleQuickStatusChange}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="w-full bg-zm-deepTeal/10 text-zm-deepTeal hover:bg-zm-deepTeal/20 justify-center h-9"
+            onClick={handleQuickStatusChange}>
 
             <span className="mr-2">{nextStatusLabel}</span>
             <ArrowRight size={14} />
           </Button> :
 
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled
-          className="w-full bg-gray-100 text-gray-400 justify-center h-9 cursor-not-allowed">
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled
+            className="w-full bg-gray-100 text-gray-400 justify-center h-9 cursor-not-allowed">
 
             {order.status === 'cancelled' ?
-          'Order Cancelled' :
-          'Order Completed'}
+              'Order Cancelled' :
+              'Order Completed'}
           </Button>
         }
       </div>

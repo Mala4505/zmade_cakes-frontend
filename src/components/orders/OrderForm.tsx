@@ -23,12 +23,12 @@ export function OrderForm({
   const [formData, setFormData] = useState<Partial<Order>>(
     initialData || {
       customerName: '',
-      customerPhone: '',
+      phone: '',
       customerAddress: '',
       customerArea: '',
-      deliveryDate: '',
-      deliveryTime: '',
-      deliveryType: 'delivery',
+      delivery_date: '',
+      delivery_time: '',
+      pickup_or_delivery: 'delivery',
       status: 'draft',
       items: [],
       notes: '',
@@ -139,8 +139,8 @@ export function OrderForm({
 
               <Input
                 label="Phone Number"
-                value={formData.customerPhone}
-                onChange={(e) => handleChange('customerPhone', e.target.value)}
+                value={formData.phone}
+                onChange={(e) => handleChange('phone', e.target.value)}
                 required
                 readOnly={isCustomerView && formData.status !== 'draft'} />
 
@@ -154,21 +154,21 @@ export function OrderForm({
               <div className="flex gap-2 p-1 bg-gray-100 rounded-lg mb-2">
                 <button
                   type="button"
-                  onClick={() => handleChange('deliveryType', 'delivery')}
-                  className={`flex-1 py-1.5 text-sm font-medium rounded-md flex items-center justify-center gap-2 transition-all ${formData.deliveryType === 'delivery' ? 'bg-white shadow text-zm-deepTeal' : 'text-gray-500'}`}>
+                  onClick={() => handleChange('pickup_or_delivery', 'delivery')}
+                  className={`flex-1 py-1.5 text-sm font-medium rounded-md flex items-center justify-center gap-2 transition-all ${formData.pickup_or_delivery === 'delivery' ? 'bg-white shadow text-zm-deepTeal' : 'text-gray-500'}`}>
 
                   <Truck size={14} /> Delivery
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleChange('deliveryType', 'pickup')}
-                  className={`flex-1 py-1.5 text-sm font-medium rounded-md flex items-center justify-center gap-2 transition-all ${formData.deliveryType === 'pickup' ? 'bg-white shadow text-zm-deepTeal' : 'text-gray-500'}`}>
+                  onClick={() => handleChange('pickup_or_delivery', 'pickup')}
+                  className={`flex-1 py-1.5 text-sm font-medium rounded-md flex items-center justify-center gap-2 transition-all ${formData.pickup_or_delivery === 'pickup' ? 'bg-white shadow text-zm-deepTeal' : 'text-gray-500'}`}>
 
                   <MapPin size={14} /> Pickup
                 </button>
               </div>
 
-              {formData.deliveryType === 'delivery' &&
+              {formData.pickup_or_delivery === 'delivery' &&
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-zm-stoneBrown/80 ml-1">
                     Address
@@ -194,16 +194,16 @@ export function OrderForm({
               <Input
                 label="Date"
                 type="date"
-                value={formData.deliveryDate}
-                onChange={(e) => handleChange('deliveryDate', e.target.value)}
+                value={formData.delivery_date}
+                onChange={(e) => handleChange('delivery_date', e.target.value)}
                 required
                 readOnly={isCustomerView && formData.status !== 'draft'} />
 
               <Input
                 label="Time"
                 type="time"
-                value={formData.deliveryTime}
-                onChange={(e) => handleChange('deliveryTime', e.target.value)}
+                value={formData.delivery_time}
+                onChange={(e) => handleChange('delivery_time', e.target.value)}
                 required
                 readOnly={isCustomerView && formData.status !== 'draft'} />
 

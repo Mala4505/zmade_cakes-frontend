@@ -57,32 +57,32 @@ export function OrderTable({
                   onClick={() => onView(order.id)}>
 
                   <td className="px-6 py-4 font-medium text-zm-deepTeal">
-                    {order.number}
+                    {order.id}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="font-medium">{order.customerName}</div>
+                    <div className="font-medium">{order.customer_name}</div>
                     <div className="text-xs text-zm-greyOlive">
-                      {order.customerPhone}
+                      {order.phone}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span
-                      className={`text-xs px-2 py-1 rounded ${order.deliveryType === 'pickup' ? 'bg-gray-100' : 'bg-zm-mintCream text-zm-deepTeal'}`}>
+                      className={`text-xs px-2 py-1 rounded ${order.delivery_date === 'pickup' ? 'bg-gray-100' : 'bg-zm-mintCream text-zm-deepTeal'}`}>
 
-                      {order.deliveryType === 'pickup' ? 'Pickup' : 'Delivery'}
+                      {order.pickup_or_delivery === 'pickup' ? 'Pickup' : 'Delivery'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-zm-stoneBrown">
-                      {order.deliveryDate}
+                      {order.delivery_date}
                     </div>
                     <div className="text-xs text-zm-greyOlive">
-                      {order.deliveryTime}
+                      {order.delivery_time}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="font-semibold">
-                      {order.total.toFixed(3)} KWD
+                      {Number(order.total).toFixed(3)} KWD
                     </div>
                     <div className="text-xs text-zm-greyOlive truncate max-w-[140px]">
                       {order.items.map((item) => item.flavor).join(', ')}
