@@ -2,7 +2,7 @@
 // import { Trash2 } from 'lucide-react';
 // import { Input } from '../ui/Input';
 // import { Button } from '../ui/Button';
-// import { OrderItem } from '../../mockData';
+// import { OrderItem } from '../../data';
 // interface ItemLineProps {
 //   item: OrderItem;
 //   onChange: (id: string, field: keyof OrderItem, value: any) => void;
@@ -175,7 +175,7 @@
 import { Trash2 } from "lucide-react";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
-import { OrderItem } from "../../mockData";
+import { OrderItem } from "../../lib/data";
 
 interface ItemLineProps {
   item: OrderItem;

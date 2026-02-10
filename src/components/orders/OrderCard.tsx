@@ -16,7 +16,7 @@ import {
   getNextStatusLabel
 } from
   '../ui/StatusBadge';
-import { Order } from '../../mockData';
+import { Order } from '../../lib/data';
 import { Button } from '../ui/Button';
 interface OrderCardProps {
   order: Order;

@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { ItemLine } from './ItemLine';
-import { Order, OrderItem } from '../../mockData';
+import { Order, OrderItem } from '../../lib/data';
 import { OrderStatus } from '../ui/StatusBadge';
 import { useToast } from '../ui/Toast';
 interface OrderFormProps {
@@ -22,20 +22,20 @@ export function OrderForm({
   const { showToast } = useToast();
   const [formData, setFormData] = useState<Partial<Order>>(
     initialData || {
-      customerName: '',
+      customer_name: '',
       phone: '',
-      customerAddress: '',
-      customerArea: '',
+      address: '',
+      area: '',
       delivery_date: '',
       delivery_time: '',
       pickup_or_delivery: 'delivery',
       status: 'draft',
       items: [],
-      notes: '',
+      customer_notes: '',
       collateral: 0,
-      collateralNotes: '',
+      collateral_items: [],
       total: 0,
-      isPaid: false
+      payment_status: 'pending'
     }
   );
   const [items, setItems] = useState<OrderItem[]>(initialData?.items || []);
@@ -132,8 +132,8 @@ export function OrderForm({
             <CardContent className="space-y-4">
               <Input
                 label="Full Name"
-                value={formData.customerName}
-                onChange={(e) => handleChange('customerName', e.target.value)}
+                value={formData.customer_name}
+                onChange={(e) => handleChange('customer_name', e.target.value)}
                 required
                 readOnly={isCustomerView && formData.status !== 'draft'} />
 
@@ -146,8 +146,8 @@ export function OrderForm({
 
               <Input
                 label="Area"
-                value={formData.customerArea}
-                onChange={(e) => handleChange('customerArea', e.target.value)}
+                value={formData.area}
+                onChange={(e) => handleChange('area', e.target.value)}
                 readOnly={isCustomerView && formData.status !== 'draft'} />
 
 
@@ -175,9 +175,9 @@ export function OrderForm({
                   </label>
                   <textarea
                     className="flex min-h-[80px] w-full rounded-xl border border-zm-greyOlive/20 bg-white px-3 py-2 text-sm focus:border-zm-deepTeal focus:outline-none"
-                    value={formData.customerAddress}
+                    value={formData.address}
                     onChange={(e) =>
-                      handleChange('customerAddress', e.target.value)
+                      handleChange('address', e.target.value)
                     }
                     readOnly={isCustomerView && formData.status !== 'draft'} />
 
@@ -287,8 +287,8 @@ export function OrderForm({
                   <textarea
                     className="flex min-h-[60px] w-full rounded-xl border border-zm-greyOlive/20 bg-white px-3 py-2 text-sm focus:border-zm-deepTeal focus:outline-none"
                     placeholder="Internal notes or special instructions..."
-                    value={formData.notes}
-                    onChange={(e) => handleChange('notes', e.target.value)} />
+                    value={formData.customer_notes}
+                    onChange={(e) => handleChange('customer_notes', e.target.value)} />
 
                 </div>
 
@@ -312,9 +312,9 @@ export function OrderForm({
                   <textarea
                     className="flex min-h-[40px] w-full rounded-xl border border-zm-greyOlive/20 bg-white px-3 py-2 text-sm focus:border-zm-deepTeal focus:outline-none"
                     placeholder="Collateral notes (e.g. Glass stand deposit)"
-                    value={formData.collateralNotes}
+                    value={formData.collateral_items}
                     onChange={(e) =>
-                      handleChange('collateralNotes', e.target.value)
+                      handleChange('collateral_items', e.target.value)
                     } />
 
                 </div>
@@ -324,7 +324,7 @@ export function OrderForm({
                 <div className="w-full md:w-auto text-right bg-zm-mintCream p-4 rounded-xl min-w-[200px]">
                   <p className="text-sm text-zm-greyOlive mb-1">Total Amount</p>
                   <p className="text-3xl font-heading text-zm-deepTeal">
-                    {(formData.total || 0).toFixed(3)}{' '}
+                    {Number(formData.total || 0).toFixed(3)}{' '}
                     <span className="text-base font-sans font-normal text-zm-stoneBrown">
                       KWD
                     </span>

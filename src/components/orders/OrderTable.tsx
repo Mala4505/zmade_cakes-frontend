@@ -7,7 +7,7 @@ import {
   getNextStatusLabel } from
 '../ui/StatusBadge';
 import { Button } from '../ui/Button';
-import { Order } from '../../mockData';
+import { Order } from '../../lib/data';
 interface OrderTableProps {
   orders: Order[];
   onView: (id: string) => void;

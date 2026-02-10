@@ -31,10 +31,10 @@
 //   token: string; // For public access
 // }
 
-import { OrderStatus } from './components/ui/StatusBadge';
+import { OrderStatus } from '../components/ui/StatusBadge';
 
 export interface OrderItem {
-  id: number;              // backend sends numeric IDs for items
+  id: string;              // backend sends numeric IDs for items
   type: string;
   size: string;
   flavor: string;
@@ -57,6 +57,7 @@ export interface Order {
   items: OrderItem[];      // backend field
   customer_notes: string;  // backend field
   admin_notes: string;     // backend field
+  collateral: number;      // backend field
   collateral_items: any[]; // backend field (array of collateral items)
   total: number | string;  // backend sends string like "71.0"
   payment_status: string;  // backend field ("paid", etc.)
@@ -65,4 +66,38 @@ export interface Order {
   updated_at: string;      // backend field
   invoice_token: string;   // backend field
   edit_token: string;      // backend field
+}
+
+
+export function calculateOrderStats(orders: Order[]) {
+  const totalOrders = orders.length;
+
+  const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
+
+  const uniqueCustomers = new Set(orders.map((o) => o.customer_name)).size;
+
+  // Example growth calculation: compare last month vs this month
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const lastMonth = (currentMonth + 11) % 12;
+
+  const currentMonthOrders = orders.filter(
+    (o) => new Date(o.created_at).getMonth() === currentMonth
+  ).length;
+
+  const lastMonthOrders = orders.filter(
+    (o) => new Date(o.created_at).getMonth() === lastMonth
+  ).length;
+
+  const growth =
+    lastMonthOrders === 0
+      ? "N/A"
+      : (((currentMonthOrders - lastMonthOrders) / lastMonthOrders) * 100).toFixed(1) + "%";
+
+  return {
+    totalOrders,
+    totalRevenue: totalRevenue.toFixed(3) + " KWD",
+    customers: uniqueCustomers,
+    growth,
+  };
 }
