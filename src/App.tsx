@@ -37,7 +37,7 @@ export function App() {
             path="/orders"
             element={
               <ProtectedRoute>
-                <Layout>
+                <Layout title="Orders">
                   <OrdersListPage />
                 </Layout>
               </ProtectedRoute>
@@ -47,7 +47,7 @@ export function App() {
             path="/orders/new"
             element={
               <ProtectedRoute>
-                <Layout>
+                <Layout title="New Order">
                   <OrderFormPage mode="new" />
                 </Layout>
               </ProtectedRoute>
@@ -57,7 +57,7 @@ export function App() {
             path="/orders/:id"
             element={
               <ProtectedRoute>
-                <Layout>
+                <Layout title="Order Details">
                   <OrderDetailPage />
                 </Layout>
               </ProtectedRoute>
@@ -67,13 +67,12 @@ export function App() {
             path="/orders/:id/edit"
             element={
               <ProtectedRoute>
-                <Layout>
+                <Layout title="Edit Order">
                   <OrderFormPage mode="edit" />
                 </Layout>
               </ProtectedRoute>
             }
           />
-
           {/* Default redirect */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
