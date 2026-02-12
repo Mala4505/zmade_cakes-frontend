@@ -1,36 +1,3 @@
-// import { OrderStatus } from './components/ui/StatusBadge';
-
-// export interface OrderItem {
-//   id: string;
-//   type: string;
-//   size: string;
-//   flavor: string;
-//   quantity: number;
-//   notes: string;
-//   price: number;
-// }
-
-// export interface Order {
-//   id: string;
-//   order_number: string;
-//   customer_name: string;
-//   phone: string;
-//   customerAddress: string;
-//   customerArea: string;
-//   delivery_date: string;
-//   delivery_time: string;
-//   delivery_date: 'pickup' | 'delivery';
-//   status: OrderStatus;
-//   items: OrderItem[];
-//   notes: string;
-//   collateral: number;
-//   collateralNotes: string;
-//   total: number;
-//   isPaid: boolean;
-//   createdAt: string;
-//   token: string; // For public access
-// }
-
 import { OrderStatus } from '../components/ui/StatusBadge';
 
 export interface OrderItem {

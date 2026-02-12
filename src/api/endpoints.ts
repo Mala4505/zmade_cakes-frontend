@@ -1,96 +1,3 @@
-// import apiClient from "./apiClient";
-
-// // =====================
-// // AUTH
-// // =====================
-// export const loginAdmin = async (password: string) => {
-//   const response = await apiClient.post("/admin/login/", { password });
-//   return response.data;
-// };
-
-// // =====================
-// // ORDERS (ADMIN)
-// // =====================
-// export const getAdminOrders = async () => {
-//   const response = await apiClient.get("/admin/orders/");
-//   return response.data;
-// };
-
-// export const getAdminOrderById = async (id: number) => {
-//   const response = await apiClient.get(`/admin/orders/${id}/`);
-//   return response.data;
-// };
-
-// export const createAdminOrder = async (orderData: any) => {
-//   const response = await apiClient.post("/admin/orders/", orderData);
-//   return response.data;
-// };
-
-// export const updateAdminOrder = async (id: number, orderData: any) => {
-//   const response = await apiClient.put(`/admin/orders/${id}/`, orderData);
-//   return response.data;
-// };
-
-// export const deleteAdminOrder = async (id: number) => {
-//   const response = await apiClient.delete(`/admin/orders/${id}/`);
-//   return response.data;
-// };
-
-// // =====================
-// // ORDER STATUS / PAYMENT
-// // =====================
-// export const updateOrderStatus = async (id: number, status: string) => {
-//   const response = await apiClient.post(`/admin/orders/${id}/status/`, { status });
-//   return response.data;
-// };
-
-// export const updateOrderPayment = async (id: number, paymentStatus: string) => {
-//   const response = await apiClient.post(`/admin/orders/${id}/payment/`, { payment_status: paymentStatus });
-//   return response.data;
-// };
-
-// export const generateInvoice = async (id: number) => {
-//   const response = await apiClient.post(`/admin/orders/${id}/invoice/`);
-//   return response.data;
-// };
-
-// // =====================
-// // NOTIFICATIONS
-// // =====================
-// export const getNotifications = async () => {
-//   const response = await apiClient.get("/admin/notifications/");
-//   return response.data;
-// };
-
-// export const markNotificationRead = async (id: number) => {
-//   const response = await apiClient.post(`/admin/notifications/${id}/read/`);
-//   return response.data;
-// };
-
-// // =====================
-// // PUBLIC ENDPOINTS
-// // =====================
-// export const getOrderEdit = async (token: string) => {
-//   const response = await apiClient.get(`/orders/edit/${token}/`);
-//   return response.data;
-// };
-
-// export const updateOrderEdit = async (token: string, orderData: any) => {
-//   const response = await apiClient.put(`/orders/edit/${token}/`, orderData);
-//   return response.data;
-// };
-
-// export const getOrderView = async (token: string) => {
-//   const response = await apiClient.get(`/orders/view/${token}/`);
-//   return response.data;
-// };
-
-// export const getInvoiceView = async (token: string) => {
-//   const response = await apiClient.get(`/invoice/${token}/`);
-//   return response.data;
-// };
-
-
 import apiClient from "./apiClient";
 
 // =====================
@@ -147,18 +54,6 @@ export const generateInvoice = async (id: number) => {
   return response.data;
 };
 
-// =====================
-// NOTIFICATIONS
-// =====================
-export const getNotifications = async () => {
-  const response = await apiClient.get("/api/admin/notifications/");
-  return response.data;
-};
-
-export const markNotificationRead = async (id: number) => {
-  const response = await apiClient.post(`/api/admin/notifications/${id}/read/`);
-  return response.data;
-};
 
 // =====================
 // PUBLIC ENDPOINTS
@@ -181,5 +76,25 @@ export const getOrderView = async (token: string) => {
 // If you add a dedicated invoice view route in Django:
 export const getInvoiceView = async (token: string) => {
   const response = await apiClient.get(`/api/invoice/${token}/`);
+  return response.data;
+};
+
+
+// =====================
+// NOTIFICATIONS
+// =====================
+
+export const getNotifications = async () => {
+  const response = await apiClient.get("/api/admin/notifications/");
+  return response.data;
+};
+
+export const markNotificationRead = async (id: number) => {
+  const response = await apiClient.post(`/api/admin/notifications/${id}/read/`);
+  return response.data;
+};
+
+export const markAllNotificationsRead = async () => {
+  const response = await apiClient.post("/api/admin/notifications/mark-all-read/");
   return response.data;
 };
