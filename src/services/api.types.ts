@@ -2,32 +2,51 @@
 // BACKEND API RESPONSE TYPES (snake_case)
 // ============================================
 
-/** Django Product model response */
+export interface BackendProductVariant {
+  id: number;
+  pieces: number;
+  label: string;
+  price: string;        // Decimal as string
+  is_active: boolean;
+  sort_order: number;
+}
+
 export interface BackendProduct {
   id: number;
   name: string;
   type: 'batch' | 'custom';
-  base_price: string; // Decimal as string
+  base_price: string;   // Decimal as string
   flavor: string;
   active: boolean;
+  description: string;
+  image: string | null;
+  image_url: string;
+  variants: BackendProductVariant[];
   created_at: string;
   updated_at: string;
 }
 
-/** Django BatchStock model response */
+export interface BackendBatchVariantConfig {
+  id: number;
+  variant: BackendProductVariant;
+  is_enabled: boolean;
+  custom_price: string | null;
+  effective_price: string;
+}
+
 export interface BackendBatchStock {
   id: number;
   product: BackendProduct;
   start_date: string;
-  total_quantity: number;
-  booked_quantity: number;
-  collected_quantity: number;
-  available_quantity: number; // Computed
+  total_pieces: number;
+  booked_pieces: number;
+  collected_pieces: number;
+  available_pieces: number;
   status: 'open' | 'closed';
+  variant_configs: BackendBatchVariantConfig[];
   created_at: string;
 }
 
-/** Django Customer model response */
 export interface BackendCustomer {
   id: number;
   name: string;
@@ -35,29 +54,28 @@ export interface BackendCustomer {
   created_at: string;
 }
 
-/** Django BatchBooking model response */
 export interface BackendBatchBooking {
   id: number;
   customer: BackendCustomer;
-  batch_stock: number; // FK ID
-  pickup_date: string;
+  batch_stock: number;  // FK ID
+  variant: BackendProductVariant | null;
   quantity: number;
+  pieces_used: number;
+  pickup_date: string;
   payment_method: 'cash' | 'wamd';
   payment_status: 'paid' | 'unpaid';
-  discount: string; // Decimal as string
+  discount: string;     // Decimal as string
   total_amount: string; // Decimal as string
   status: 'booked' | 'collected' | 'cancelled';
   created_at: string;
 }
 
-/** JWT Login response */
 export interface BackendLoginResponse {
   access: string;
   refresh: string;
   username: string;
 }
 
-/** Dashboard stats response */
 export interface BackendDashboardStats {
   open_batches: number;
   total_available: number;
@@ -65,11 +83,44 @@ export interface BackendDashboardStats {
   total_collected: number;
   revenue_collected: number;
   revenue_pending: number;
+  monthly_bookings: Array<{ month: string; bookings: number; revenue: number }>;
+  product_breakdown: Array<{ product: string; count: number }>;
+}
+
+// Public shop backend types
+export interface BackendPublicVariantOption {
+  variant_id: number;
+  pieces: number;
+  label: string;
+  price: string;
+  is_available: boolean;
+  is_enabled: boolean;
+}
+
+export interface BackendPublicBatch {
+  id: number;
+  product_id: number;
+  product_name: string;
+  product_flavor: string;
+  product_image: string | null;
+  product_active: boolean;
+  start_date: string;
+  available_pieces: number;
+  variants: BackendPublicVariantOption[];
 }
 
 // ============================================
-// FRONTEND TYPES (camelCase) - Use these in UI
+// FRONTEND TYPES (camelCase) — use these in UI
 // ============================================
+
+export interface ProductVariant {
+  id: string;
+  pieces: number;
+  label: string;
+  price: number;
+  isActive: boolean;
+  sortOrder: number;
+}
 
 export interface Product {
   id: string;
@@ -78,46 +129,61 @@ export interface Product {
   basePrice: number;
   isActive: boolean;
   flavor: string;
-  description?: string; // Frontend-only, not in backend
-  image?: string; // Frontend-only, not in backend
+  description: string;
+  image: string | null;
+  imageUrl: string | null;
+  variants: ProductVariant[];
+}
+
+export interface BatchVariantConfig {
+  id: string;
+  variant: ProductVariant;
+  isEnabled: boolean;
+  customPrice: number | null;
+  effectivePrice: number;
 }
 
 export interface Batch {
   id: string;
+  productId: string;
   productName: string;
   startDate: string;
-  endDate: string; // Frontend-only (calculated as start_date + 3 days)
+  endDate: string;        // Always computed: startDate + 3 days. Never sent to backend.
   status: 'active' | 'closed' | 'upcoming';
-  totalQty: number;
-  bookedQty: number;
-  collectedQty: number;
-  availableQty: number;
-  pricePerUnit: number;
+  totalPieces: number;
+  bookedPieces: number;
+  collectedPieces: number;
+  availablePieces: number;
+  pricePerUnit: number;   // product base_price — kept for display
+  variantConfigs: BatchVariantConfig[];
 }
 
 export interface Customer {
   id: string;
   name: string;
   phone: string;
-  email?: string; // Frontend-only
-  totalBookings: number; // Computed
-  collectedCount: number; // Computed
-  cancelledCount: number; // Computed
+  email?: string;         // not in backend
+  totalBookings: number;
+  collectedCount: number;
+  cancelledCount: number;
   lastOrderDate: string;
 }
 
 export interface Booking {
   id: string;
   batchId: string;
+  variantId: string;
+  variantLabel: string;
   customerName: string;
   customerPhone: string;
   qty: number;
+  piecesUsed: number;
   pickupDate: string;
-  paymentStatus: 'paid' | 'unpaid'; // Note: removed 'partial' as backend doesn't support it
+  paymentStatus: 'paid' | 'unpaid';
   bookingStatus: 'booked' | 'collected' | 'cancelled';
   discount: number;
-  amountPaid: number; // Computed from payment_status
-  totalAmount: number; // From backend
+  amountPaid: number;
+  totalAmount: number;
   createdAt: string;
 }
 
@@ -128,24 +194,64 @@ export interface KPIData {
   totalCollected: number;
   revenueCollected: number;
   revenuePending: number;
+  monthlyBookings: Array<{ month: string; bookings: number; revenue: number }>;
+  productBreakdown: Array<{ product: string; count: number }>;
 }
 
-// Request payload types
+export interface ShopVariantOption {
+  variantId: string;
+  pieces: number;
+  label: string;
+  price: number;
+  isAvailable: boolean;
+  isEnabled: boolean;
+}
+
+export interface ShopBatch {
+  id: string;
+  productId: string;
+  productName: string;
+  productFlavor: string;
+  productImage: string | null;
+  productActive: boolean;
+  startDate: string;
+  availablePieces: number;
+  variants: ShopVariantOption[];
+}
+
+// ============================================
+// REQUEST PAYLOAD TYPES
+// ============================================
+
+export interface CreateVariantPayload {
+  pieces: number;
+  label: string;
+  price: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
 export interface CreateBatchPayload {
-  product: number; // Product ID
+  product: number;
   start_date: string;
-  total_quantity: number;
+  total_pieces: number;
   status: 'open' | 'closed';
 }
 
 export interface CreateBookingPayload {
-  customer: number; // Customer ID
-  batch_stock: number; // BatchStock ID
+  customer: number;
+  batch_stock: number;
+  variant?: number;       // variant_id — optional for legacy bookings
   pickup_date: string;
   quantity: number;
   payment_method: 'cash' | 'wamd';
   payment_status: 'paid' | 'unpaid';
-  discount: string; // As string for Decimal
+  discount: string;
+}
+
+export interface UpdateVariantConfigPayload {
+  is_enabled?: boolean;
+  custom_price?: string | null;
 }
 
 export interface CreateProductPayload {
@@ -154,6 +260,7 @@ export interface CreateProductPayload {
   base_price: string;
   flavor: string;
   active: boolean;
+  description?: string;
 }
 
 export interface CreateCustomerPayload {
@@ -161,13 +268,19 @@ export interface CreateCustomerPayload {
   phone: string;
 }
 
-// Shop types
+// ============================================
+// CART / ORDER TYPES (shop)
+// ============================================
+
 export interface CartItem {
   productId: string;
   batchId: string;
+  variantId: string;
+  variantLabel: string;
   productName: string;
   price: number;
   quantity: number;
+  pieces: number;
   pickupDate: string;
 }
 

@@ -4,24 +4,19 @@ import type * as B from './api.types';
 import * as T from './transformers';
 
 // ============================================
-// AXIOS INSTANCE CONFIGURATION
+// AXIOS INSTANCE — authenticated (admin)
 // ============================================
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: env.API_BASE_URL,
   timeout: env.API_TIMEOUT,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Request interceptor - Add auth token
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem(env.TOKEN_KEY);
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     if (env.ENABLE_DEBUG_LOGS) {
       console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`, config.data);
     }
@@ -30,17 +25,13 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor - Handle errors
 apiClient.interceptors.response.use(
   (response) => {
-    if (env.ENABLE_DEBUG_LOGS) {
-      console.log(`[API] Response:`, response.data);
-    }
+    if (env.ENABLE_DEBUG_LOGS) console.log(`[API] Response:`, response.data);
     return response;
   },
   async (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Token expired - try to refresh
       const refreshToken = localStorage.getItem(env.REFRESH_KEY);
       if (refreshToken) {
         try {
@@ -49,16 +40,14 @@ apiClient.interceptors.response.use(
           });
           const { access } = response.data;
           localStorage.setItem(env.TOKEN_KEY, access);
-
-          // Retry original request
           if (error.config) {
             error.config.headers.Authorization = `Bearer ${access}`;
             return apiClient(error.config);
           }
-        } catch (refreshError) {
-          // Refresh failed - logout
+        } catch {
           localStorage.removeItem(env.TOKEN_KEY);
           localStorage.removeItem(env.REFRESH_KEY);
+          localStorage.removeItem(`${env.TOKEN_KEY}_user`);
           window.location.href = '/login';
         }
       }
@@ -68,7 +57,17 @@ apiClient.interceptors.response.use(
 );
 
 // ============================================
-// API ERROR HANDLER
+// AXIOS INSTANCE — public (shop, no auth)
+// ============================================
+
+const shopClient: AxiosInstance = axios.create({
+  baseURL: env.API_BASE_URL,
+  timeout: env.API_TIMEOUT,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// ============================================
+// ERROR HANDLER
 // ============================================
 
 class APIError extends Error {
@@ -92,6 +91,41 @@ const handleError = (error: AxiosError): never => {
 };
 
 // ============================================
+// HELPERS
+// ============================================
+
+/**
+ * Builds either a FormData (when imageFile provided) or plain object payload
+ * for product create/update. When sending FormData, do NOT set Content-Type
+ * manually — axios sets it with the correct multipart boundary automatically.
+ */
+function buildProductPayload(
+  data: Partial<B.Product>,
+  imageFile?: File
+): FormData | Record<string, unknown> {
+  if (imageFile) {
+    const fd = new FormData();
+    if (data.name !== undefined) fd.append('name', data.name);
+    if (data.type !== undefined) fd.append('type', data.type);
+    if (data.basePrice !== undefined) fd.append('base_price', data.basePrice.toFixed(3));
+    if (data.flavor !== undefined) fd.append('flavor', data.flavor ?? '');
+    if (data.isActive !== undefined) fd.append('active', String(data.isActive));
+    if (data.description !== undefined) fd.append('description', data.description ?? '');
+    fd.append('image', imageFile);
+    return fd;
+  }
+
+  const obj: Record<string, unknown> = {};
+  if (data.name !== undefined) obj.name = data.name;
+  if (data.type !== undefined) obj.type = data.type;
+  if (data.basePrice !== undefined) obj.base_price = data.basePrice.toFixed(3);
+  if (data.flavor !== undefined) obj.flavor = data.flavor;
+  if (data.isActive !== undefined) obj.active = data.isActive;
+  if (data.description !== undefined) obj.description = data.description;
+  return obj;
+}
+
+// ============================================
 // AUTH API
 // ============================================
 
@@ -100,12 +134,9 @@ export const authApi = {
     try {
       const response = await apiClient.post('/auth/login/', { username, password });
       const data: B.BackendLoginResponse = response.data;
-
-      // Store tokens
       localStorage.setItem(env.TOKEN_KEY, data.access);
       localStorage.setItem(env.REFRESH_KEY, data.refresh);
       localStorage.setItem(`${env.TOKEN_KEY}_user`, JSON.stringify({ username: data.username }));
-
       return data;
     } catch (error) {
       handleError(error as AxiosError);
@@ -122,16 +153,13 @@ export const authApi = {
   refreshToken: async (): Promise<string> => {
     const refresh = localStorage.getItem(env.REFRESH_KEY);
     if (!refresh) throw new APIError('No refresh token');
-
     const response = await apiClient.post('/auth/refresh/', { refresh });
     const { access } = response.data;
     localStorage.setItem(env.TOKEN_KEY, access);
     return access;
   },
 
-  isAuthenticated: (): boolean => {
-    return !!localStorage.getItem(env.TOKEN_KEY);
-  },
+  isAuthenticated: (): boolean => !!localStorage.getItem(env.TOKEN_KEY),
 };
 
 // ============================================
@@ -154,15 +182,28 @@ export const productsApi = {
     return T.transformProduct(response.data);
   },
 
-  create: async (data: Partial<B.Product>): Promise<B.Product> => {
-    const payload = T.toBackendCreateProduct(data);
-    const response = await apiClient.post<B.BackendProduct>('/products/', payload);
+  /**
+   * Pass imageFile when the user selected a new image from the gallery.
+   * Omit it (or pass undefined) to send a plain JSON request.
+   */
+  create: async (data: Partial<B.Product>, imageFile?: File): Promise<B.Product> => {
+    const payload = buildProductPayload(data, imageFile);
+    const response = await apiClient.post<B.BackendProduct>(
+      '/products/',
+      payload,
+      // Let axios set Content-Type automatically for FormData
+      imageFile ? { headers: { 'Content-Type': undefined } } : {}
+    );
     return T.transformProduct(response.data);
   },
 
-  update: async (id: string, data: Partial<B.Product>): Promise<B.Product> => {
-    const payload = T.toBackendUpdateProduct(data);
-    const response = await apiClient.patch<B.BackendProduct>(`/products/${id}/`, payload);
+  update: async (id: string, data: Partial<B.Product>, imageFile?: File): Promise<B.Product> => {
+    const payload = buildProductPayload(data, imageFile);
+    const response = await apiClient.patch<B.BackendProduct>(
+      `/products/${id}/`,
+      payload,
+      imageFile ? { headers: { 'Content-Type': undefined } } : {}
+    );
     return T.transformProduct(response.data);
   },
 
@@ -173,6 +214,42 @@ export const productsApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/products/${id}/`);
+  },
+
+  // ── Variant management ──────────────────────────────
+
+  getVariants: async (productId: string): Promise<B.ProductVariant[]> => {
+    const response = await apiClient.get<B.BackendProductVariant[]>(
+      `/products/${productId}/variants/`
+    );
+    return response.data.map(T.transformVariant);
+  },
+
+  createVariant: async (
+    productId: string,
+    data: B.CreateVariantPayload
+  ): Promise<B.ProductVariant> => {
+    const response = await apiClient.post<B.BackendProductVariant>(
+      `/products/${productId}/variants/`,
+      data
+    );
+    return T.transformVariant(response.data);
+  },
+
+  updateVariant: async (
+    productId: string,
+    variantId: string,
+    data: Partial<B.CreateVariantPayload>
+  ): Promise<B.ProductVariant> => {
+    const response = await apiClient.patch<B.BackendProductVariant>(
+      `/products/${productId}/variants/${variantId}/`,
+      data
+    );
+    return T.transformVariant(response.data);
+  },
+
+  deleteVariant: async (productId: string, variantId: string): Promise<void> => {
+    await apiClient.delete(`/products/${productId}/variants/${variantId}/`);
   },
 };
 
@@ -203,16 +280,35 @@ export const batchesApi = {
     return T.transformBatch(response.data);
   },
 
-  close: async (id: string): Promise<B.Batch> => {
-    return batchesApi.update(id, { status: 'closed' });
-  },
+  close: async (id: string): Promise<B.Batch> =>
+    batchesApi.update(id, { status: 'closed' }),
 
-  reopen: async (id: string): Promise<B.Batch> => {
-    return batchesApi.update(id, { status: 'active' });
-  },
+  reopen: async (id: string): Promise<B.Batch> =>
+    batchesApi.update(id, { status: 'active' }),
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/batch/stocks/${id}/`);
+  },
+
+  // ── Variant config management ────────────────────────
+
+  getVariantConfigs: async (batchId: string): Promise<B.BatchVariantConfig[]> => {
+    const response = await apiClient.get<B.BackendBatchVariantConfig[]>(
+      `/batch/stocks/${batchId}/variant-configs/`
+    );
+    return response.data.map(T.transformVariantConfig);
+  },
+
+  updateVariantConfig: async (
+    batchId: string,
+    configId: string,
+    data: B.UpdateVariantConfigPayload
+  ): Promise<B.BatchVariantConfig> => {
+    const response = await apiClient.patch<B.BackendBatchVariantConfig>(
+      `/batch/stocks/${batchId}/variant-configs/${configId}/`,
+      data
+    );
+    return T.transformVariantConfig(response.data);
   },
 };
 
@@ -232,10 +328,16 @@ export const bookingsApi = {
     return T.transformBooking(response.data);
   },
 
-  create: async (data: Partial<B.Booking>, customerId: number, batchStockId: number): Promise<B.Booking> => {
+  create: async (
+    data: Partial<B.Booking>,
+    customerId: number,
+    batchStockId: number,
+    variantId?: number
+  ): Promise<B.Booking> => {
     const payload: B.CreateBookingPayload = {
       customer: customerId,
       batch_stock: batchStockId,
+      ...(variantId ? { variant: variantId } : {}),
       pickup_date: data.pickupDate || '',
       quantity: data.qty || 1,
       payment_method: 'cash',
@@ -246,25 +348,28 @@ export const bookingsApi = {
     return T.transformBooking(response.data);
   },
 
-  updateStatus: async (id: string, status: B.Booking['bookingStatus']): Promise<B.Booking> => {
-    const response = await apiClient.patch<B.BackendBatchBooking>(`/batch/bookings/${id}/`, { status });
+  updateStatus: async (
+    id: string,
+    status: B.Booking['bookingStatus']
+  ): Promise<B.Booking> => {
+    const response = await apiClient.patch<B.BackendBatchBooking>(
+      `/batch/bookings/${id}/`,
+      { status }
+    );
     return T.transformBooking(response.data);
   },
 
-  markCollected: async (id: string): Promise<B.Booking> => {
-    return bookingsApi.updateStatus(id, 'collected');
-  },
+  markCollected: (id: string) => bookingsApi.updateStatus(id, 'collected'),
 
   markPaid: async (id: string): Promise<B.Booking> => {
-    const response = await apiClient.patch<B.BackendBatchBooking>(`/batch/bookings/${id}/`, {
-      payment_status: 'paid',
-    });
+    const response = await apiClient.patch<B.BackendBatchBooking>(
+      `/batch/bookings/${id}/`,
+      { payment_status: 'paid' }
+    );
     return T.transformBooking(response.data);
   },
 
-  cancel: async (id: string): Promise<B.Booking> => {
-    return bookingsApi.updateStatus(id, 'cancelled');
-  },
+  cancel: (id: string) => bookingsApi.updateStatus(id, 'cancelled'),
 };
 
 // ============================================
@@ -273,12 +378,10 @@ export const bookingsApi = {
 
 export const customersApi = {
   getAll: async (): Promise<B.Customer[]> => {
-    // Fetch customers and bookings in parallel for stats
     const [customersRes, bookingsRes] = await Promise.all([
       apiClient.get<B.BackendCustomer[]>('/customers/'),
       apiClient.get<B.BackendBatchBooking[]>('/batch/bookings/'),
     ]);
-
     return customersRes.data.map(c => T.transformCustomer(c, bookingsRes.data));
   },
 
@@ -290,21 +393,15 @@ export const customersApi = {
     return T.transformCustomer(customerRes.data, bookingsRes.data);
   },
 
-  findOrCreateByPhone: async (name: string, phone: string): Promise<B.BackendCustomer> => {
-    // First search for existing customer
+  findOrCreateByPhone: async (
+    name: string,
+    phone: string
+  ): Promise<B.BackendCustomer> => {
     const response = await apiClient.get<B.BackendCustomer[]>('/customers/', {
       params: { phone },
     });
-
-    if (response.data.length > 0) {
-      return response.data[0];
-    }
-
-    // Create new customer
-    const createRes = await apiClient.post<B.BackendCustomer>('/customers/', {
-      name,
-      phone,
-    });
+    if (response.data.length > 0) return response.data[0];
+    const createRes = await apiClient.post<B.BackendCustomer>('/customers/', { name, phone });
     return createRes.data;
   },
 
@@ -317,7 +414,6 @@ export const customersApi = {
     const payload: Partial<B.BackendCustomer> = {};
     if (data.name) payload.name = data.name;
     if (data.phone) payload.phone = data.phone;
-
     const response = await apiClient.patch<B.BackendCustomer>(`/customers/${id}/`, payload);
     return T.transformCustomer(response.data);
   },
@@ -333,16 +429,34 @@ export const customersApi = {
 
 export const dashboardApi = {
   getStats: async (): Promise<B.KPIData> => {
-    const response = await apiClient.get<B.BackendDashboardStats>('/batch/stocks/dashboard-stats/');
+    const response = await apiClient.get<B.BackendDashboardStats>(
+      '/batch/stocks/dashboard-stats/'
+    );
     return T.transformKPIData(response.data);
   },
 };
 
 // ============================================
-// SHOP API (Public endpoints)
+// SHOP API — public, no auth required
 // ============================================
 
 export const shopApi = {
+  /**
+   * Fetches all open batches for the shop.
+   * Returns ALL batches regardless of product.active —
+   * the frontend visually disables inactive products.
+   */
+  getOpenBatches: async (): Promise<B.ShopBatch[]> => {
+    const response = await shopClient.get<B.BackendPublicBatch[]>('/batch/public/');
+    return response.data.map(T.transformShopBatch);
+  },
+
+  getShopBatchById: async (id: string): Promise<B.ShopBatch> => {
+    const response = await shopClient.get<B.BackendPublicBatch>(`/batch/public/${id}/`);
+    return T.transformShopBatch(response.data);
+  },
+
+  // Legacy method kept so old shop code doesn't break
   getActiveProducts: async (): Promise<B.Product[]> => {
     const response = await apiClient.get<B.BackendProduct[]>('/products/', {
       params: { active: true, type: 'batch' },
